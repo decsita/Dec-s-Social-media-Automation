@@ -1,0 +1,34 @@
+{
+  "name": "decs-social-media-automation",
+  "version": "1.0.0",
+  "description": "DEC'S Social Media Automation OS — motore grafico (post e reel) chiamato da Make (scenario S3)",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "node scripts/render.mjs",
+    "prova": "node scripts/render.mjs --payload fixtures/reel-commissioni.json --no-upload",
+    "lint": "tsc"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.3.0",
+    "@remotion/bundler": "4.0.535",
+    "@remotion/cli": "4.0.535",
+    "@remotion/fonts": "4.0.535",
+    "@remotion/renderer": "4.0.535",
+    "@remotion/three": "4.0.535",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.535",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.535",
+    "@types/react": "19.2.7",
+    "@types/three": "^0.180.0",
+    "@types/web": "0.0.166",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3"
+  }
+}

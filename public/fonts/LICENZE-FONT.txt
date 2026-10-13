@@ -1,0 +1,44 @@
+DEC'S — licenze dei font self-ospitati
+Scaricati il 28/08/2026. Nessuno di questi file viene servito da una CDN in
+produzione: stanno qui, nel repo, e il CSS li carica da assets/fonts/.
+
+────────────────────────────────────────────────────────────────────────────
+1. General Sans — testo, titoli, UI (400, 500, 600)
+   general-sans-400-latin.woff2
+   general-sans-500-latin.woff2
+   general-sans-600-latin.woff2
+
+   Autore: Frode Helland (Indian Type Foundry / Fontshare)
+   Origine: https://www.fontshare.com/fonts/general-sans
+   Licenza: ITF Free Font Licence (FFL) — gratuita per uso personale e
+   commerciale, desktop e web, senza attribuzione obbligatoria.
+   Vincoli: i file non si rivendono e non si ridistribuiscono come font a sé
+   stanti; l'inclusione dentro un sito web è espressamente consentita.
+   Testo integrale: https://www.fontshare.com/licenses/itf-ffl
+
+────────────────────────────────────────────────────────────────────────────
+2. Instrument Serif Italic — accenti in corsivo (400 italic)
+   instrument-serif-italic-latin.woff2
+
+   Autore: Rodrigo Fuenzalida, Jordan Egstad (Instrument)
+   Origine: https://fonts.google.com/specimen/Instrument+Serif
+   Licenza: SIL Open Font License, Version 1.1
+
+   Copyright 2022 The Instrument Serif Project Authors
+   (https://github.com/Instrument/instrument-serif)
+
+   This Font Software is licensed under the SIL Open Font License,
+   Version 1.1. This license is available with a FAQ at:
+   https://openfontlicense.org
+
+   In sintesi, e senza sostituire il testo integrale sopra linkato:
+   - il font si può usare, studiare, modificare e ridistribuire liberamente,
+     anche in progetti commerciali;
+   - una versione modificata non può usare il nome riservato "Instrument Serif";
+   - il font, originale o modificato, non si vende da solo;
+   - questa nota di licenza va conservata con i file.
+
+────────────────────────────────────────────────────────────────────────────
+Font rimossi il 28/08/2026 (brief 08): Space Grotesk, Outfit, Space Mono.
+I .woff2 sono stati cancellati insieme ai loro @font-face: se servisse
+ricostruire la versione precedente, stanno nella storia di git.

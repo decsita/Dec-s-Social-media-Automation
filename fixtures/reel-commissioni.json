@@ -1,0 +1,29 @@
+{
+  "post_id": "decs-prova-reel-01",
+  "client_id": "decs",
+  "media_tipo": "reel",
+  "format": "F3_reel",
+  "oggetto_3d": "moneta-morsa",
+  "problema": "commissioni OTA",
+  "palette_audio": "futuristica",
+  "contenuto": {
+    "props": {},
+    "slide": [],
+    "timeline_testi": {
+      "etichetta": "Commissioni OTA",
+      "a1": "Ogni prenotazione dal portale",
+      "a2": "paga una *commissione*.",
+      "bEtichetta": "Esempio su un anno",
+      "bTotale": "18.000 €",
+      "bNota": "Esempio con numeri inventati: 120.000 € di prenotazioni al 15%.",
+      "c1": "L'ospite è tuo.",
+      "c2": "Il contatto no.",
+      "d1": "Quanto paghi tu in un anno?",
+      "invito": "Scrivi COMMISSIONI nei DM"
+    },
+    "caption": "Ogni notte venduta sul portale lascia una fetta per strada.\n\nScrivi COMMISSIONI nei DM: ti mandiamo il calcolo sulla tua struttura.",
+    "hashtag": ["bnb", "affittibrevi", "prenotazionidirette"],
+    "cta": "Scrivi COMMISSIONI nei DM"
+  },
+  "callback": "https://hook.eu1.make.com/9nm4qlzqjck4c0si5lgnqap8ujtwagdh"
+}

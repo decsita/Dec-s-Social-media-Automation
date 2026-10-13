@@ -1,0 +1,8 @@
+{
+  "post_id": "decs-prova-post-01",
+  "client_id": "decs",
+  "media_tipo": "immagine",
+  "format": "F1_tesi",
+  "contenuto": { "props": { "format": "PostTesi", "props": { "etichetta": "Commissioni OTA", "tesi": "Booking non è il tuo cliente.\n==È il tuo intermediario più caro.==" } }, "slide": [], "timeline_testi": {} },
+  "callback": "https://hook.eu1.make.com/9nm4qlzqjck4c0si5lgnqap8ujtwagdh"
+}

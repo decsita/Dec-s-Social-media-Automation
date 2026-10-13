@@ -1,0 +1,105 @@
+name: Render grafiche (Social OS)
+
+# Parte in due modi:
+# 1. repository_dispatch "render": lo manda lo scenario Make "S3 · Produzione e revisione"
+#    con il post nel client_payload. A fine render il motore chiama il webhook di S3b.
+# 2. workflow_dispatch: a mano dalla scheda Actions, per provare senza passare da Make.
+on:
+  repository_dispatch:
+    types: [render]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: "Payload JSON come lo manda Make (vuoto = reel di prova in fixtures/)"
+        required: false
+        default: ""
+      chiama_make:
+        description: "Mandare davvero il risultato a S3b (Make)?"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-${{ github.event.client_payload.post_id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      POST_ID: ${{ github.event.client_payload.post_id }}
+      CALLBACK: ${{ github.event.client_payload.callback }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: ffmpeg
+        run: which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
+
+      - name: Dipendenze
+        run: npm ci --no-audit --no-fund
+
+      - name: Font General Sans (dai segreti, non stanno nel repo)
+        env:
+          GS400: ${{ secrets.GENERAL_SANS_400 }}
+          GS500: ${{ secrets.GENERAL_SANS_500 }}
+          GS600: ${{ secrets.GENERAL_SANS_600 }}
+        run: |
+          for w in 400 500 600; do
+            v="GS$w"
+            if [ -z "${!v}" ]; then echo "::error::Manca il segreto GENERAL_SANS_$w (vedi README)"; exit 1; fi
+            printf '%s' "${!v}" | base64 -d > "public/fonts/general-sans-$w-latin.woff2"
+          done
+          ls -la public/fonts
+
+      - name: Browser per il render
+        run: npx remotion browser ensure
+
+      - name: Render, controllo qualità, caricamento, risposta a S3b
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_BUCKET: ${{ vars.SUPABASE_BUCKET || 'social-media' }}
+          CONCORRENZA: "4"
+          INPUT_PAYLOAD: ${{ github.event.inputs.payload }}
+          CHIAMA_MAKE: ${{ github.event.inputs.chiama_make }}
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            node scripts/render.mjs
+          else
+            if [ -n "$INPUT_PAYLOAD" ]; then printf '%s' "$INPUT_PAYLOAD" > out-payload.json; else cp fixtures/reel-commissioni.json out-payload.json; fi
+            if [ "$CHIAMA_MAKE" = "true" ]; then node scripts/render.mjs --payload out-payload.json; else node scripts/render.mjs --payload out-payload.json --no-callback; fi
+          fi
+
+      - name: File prodotti (scaricabili per 7 giorni)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grafiche-${{ github.event.client_payload.post_id || github.run_id }}
+          path: |
+            out/*.mp4
+            out/*.jpg
+            out/esito.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Se il job si ferma prima dello script (dipendenze, font), S3b deve comunque saperlo.
+      - name: Avvisa S3b se il job è fallito prima del render
+        if: failure() && github.event_name == 'repository_dispatch'
+        run: |
+          if [ -f out/esito.json ]; then exit 0; fi
+          case "$CALLBACK" in https://hook.*.make.com/*) ;; *) echo "callback assente o non valida"; exit 0;; esac
+          node -e '
+            fetch(process.env.CALLBACK, { method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ post_id: process.env.POST_ID, media_url: "", anteprima_url: "", qa_esito: "bloccato",
+                qa_note: "BLOCCO: il workflow GitHub si è fermato prima del render. Log: " + process.env.RUN_URL }) })
+              .then(r => console.log("S3b", r.status));'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

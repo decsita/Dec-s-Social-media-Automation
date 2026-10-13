@@ -1,0 +1,18 @@
+{
+  "post_id": "decs-prova-carosello-01",
+  "client_id": "decs",
+  "media_tipo": "carosello",
+  "format": "F2_carosello",
+  "contenuto": {
+    "props": { "format": "CopertinaCarosello", "props": { "etichetta": "Prenotazioni dirette", "titolo": "Come riportare in casa le prenotazioni *dirette*" } },
+    "slide": [
+      { "format": "SlideCarosello", "props": { "numero": "01", "titolo": "Fatti trovare fuori dal portale", "testo": "Un link nel profilo e una scheda Google aggiornata: chi ti cerca per nome deve arrivare a te." } },
+      { "format": "SlideCarosello", "props": { "numero": "02", "titolo": "Lascia un contatto in camera", "testo": "Una card con QR al check-out: chi torna sa dove scriverti." } },
+      { "format": "SlideCarosello", "props": { "numero": "03", "titolo": "Rispondi subito, anche di sera", "testo": "Chi scrive alle 23 e non riceve risposta prenota altrove." } },
+      { "format": "SlideCarosello", "props": { "numero": "04", "titolo": "Non togliere le OTA da un giorno all'altro", "testo": "Portano ospiti che da solo non raggiungi. L'obiettivo è ridurre la quota, non azzerarla." } },
+      { "format": "SlideCarosello", "props": { "numero": "05", "titolo": "Parti dal conto", "testo": "Quanto paghi oggi di commissioni? Scrivi COMMISSIONI nei DM e lo calcoliamo insieme." } }
+    ],
+    "timeline_testi": {}
+  },
+  "callback": "https://hook.eu1.make.com/9nm4qlzqjck4c0si5lgnqap8ujtwagdh"
+}

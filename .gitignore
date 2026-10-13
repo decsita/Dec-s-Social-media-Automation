@@ -1,0 +1,6 @@
+node_modules/
+out/
+build/
+.env
+# General Sans: licenza ITF FFL, non si ridistribuisce. Arriva dai segreti di GitHub.
+public/fonts/general-sans-*.woff2
