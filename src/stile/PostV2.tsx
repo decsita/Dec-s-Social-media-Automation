@@ -15,7 +15,8 @@ export const fontV2 = loadFont({ family: 'Anton', url: staticFile('fonts/anton-4
 
 const LIME = '#D4FF00';
 /** Ogni oggetto ha la sua misura: deve stare in basso a destra senza coprire il titolo. */
-const SCALA: Record<string, number> = { 'moneta-morsa': 0.82, 'chiave-portachiavi': 0.9, 'telefono-notifica': 0.62, 'calendario-caselle': 0.8, 'stella-incrinata': 0.9, megafono: 0.85, 'pezzo-scacchi': 0.68 };
+const POS: Record<string, [number, number, number]> = { 'moneta-morsa': [0.85, -1.45, 0], 'chiave-portachiavi': [0.75, -0.95, 0] };
+const SCALA: Record<string, number> = { 'moneta-morsa': 0.72, 'chiave-portachiavi': 0.7, 'telefono-notifica': 0.62, 'calendario-caselle': 0.8, 'stella-incrinata': 0.9, megafono: 0.85, 'pezzo-scacchi': 0.68 };
 const INK = '#080808';
 const AVORIO = '#F2F0EB';
 
@@ -84,7 +85,7 @@ export const PostV2: React.FC<PostV2Props> = ({ registro, titolo, corpo, occhiel
       {/* oggetto protagonista, grande, in basso a destra, anche tagliato */}
       <AbsoluteFill>
         <ThreeCanvas width={width} height={height} camera={{ position: [0, 0, 8], fov: 34 }}>
-          <Studio3D id={id} t={f / 30 + 3} fase={0.35} fondoChiaro={registro !== 'scuro'} scala={SCALA[id] ?? 0.85} pos={[1.25, -1.55, 0]} />
+          <Studio3D id={id} t={f / 30 + 3} fase={0.35} fondoChiaro={registro !== 'scuro'} scala={SCALA[id] ?? 0.85} pos={POS[id] ?? [1.25, -1.55, 0]} />
         </ThreeCanvas>
       </AbsoluteFill>
 

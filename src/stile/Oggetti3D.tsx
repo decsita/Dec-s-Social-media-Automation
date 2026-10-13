@@ -55,69 +55,172 @@ const Nero: React.FC<{ chiaro?: boolean }> = ({ chiaro }) => (
   <meshPhysicalMaterial color={chiaro ? '#2a2c28' : '#121311'} roughness={0.28} metalness={0.15} clearcoat={1} clearcoatRoughness={0.12} />
 );
 const Lime: React.FC = () => <meshPhysicalMaterial color={LIME} roughness={0.32} metalness={0} clearcoat={0.7} clearcoatRoughness={0.2} emissive={LIME} emissiveIntensity={0.06} />;
-const Avorio: React.FC = () => <meshPhysicalMaterial color="#ecebe5" roughness={0.45} clearcoat={0.3} />;
 
 type P = { t: number; fase: number };
 const eo = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 
-const MonetaMorsa: React.FC<P> = ({ t }) => {
-  const s = eo((t - 0.3) / 1.2);
-  const gap = 1.7 - 0.7 * s;
+/** Texture disegnata su canvas: serve per scritte e interfacce sugli oggetti (schermi, facce). */
+function useTela2D(w: number, h: number, disegna: (c: CanvasRenderingContext2D) => void, chiave: string) {
+  return useMemo(() => {
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    const c = cv.getContext('2d')!;
+    disegna(c);
+    const tx = new THREE.CanvasTexture(cv);
+    tx.colorSpace = THREE.SRGBColorSpace;
+    tx.anisotropy = 8;
+    return tx;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chiave]);
+}
+
+/** Simbolo dell'euro in rilievo, costruito con le forme (nessun font 3D da caricare). */
+function formaEuro(): THREE.Shape[] {
+  const R = 0.5, r = 0.36, a0 = (40 * Math.PI) / 180, a1 = (320 * Math.PI) / 180;
+  const arco = new THREE.Shape();
+  arco.absarc(0.06, 0, R, a0, a1, false);
+  arco.absarc(0.06, 0, r, a1, a0, true);
+  arco.closePath();
+  const barra = (y: number) => {
+    const s = new THREE.Shape();
+    s.moveTo(-0.62, y - 0.06);
+    s.lineTo(0.22, y - 0.06);
+    s.lineTo(0.18, y + 0.06);
+    s.lineTo(-0.58, y + 0.06);
+    s.closePath();
+    return s;
+  };
+  return [arco, barra(0.1), barra(-0.12)];
+}
+
+/**
+ * moneta-morsa (commissioni) → una moneta da un euro a cui manca una fetta,
+ * e la fetta che se ne va. Si legge senza spiegazioni: "ogni prenotazione ti costa una fetta".
+ * L'id resta "moneta-morsa" per non cambiare il prompt dello Stratega.
+ */
+const MonetaMorsa: React.FC<P> = ({ t, fase }) => {
+  const taglio = Math.PI / 3.2; // ampiezza della fetta
+  const moneta = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    s.absarc(0, 0, 1.15, taglio / 2, Math.PI * 2 - taglio / 2, false);
+    s.lineTo(0, 0);
+    return s;
+  }, [taglio]);
+  const fetta = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    s.absarc(0, 0, 1.15, -taglio / 2, taglio / 2, false);
+    s.lineTo(0, 0);
+    return s;
+  }, [taglio]);
+  const euro = useMemo(() => formaEuro(), []);
+  const via = eo((t - 0.4) / 1.4);
+  const ext = { depth: 0.24, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04, bevelSegments: 4, curveSegments: 64 };
   return (
-    <group rotation={[0.22, -0.62, 0]}>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.35, 0]}>
-        <cylinderGeometry args={[0.9, 0.9, 0.2, 96]} />
-        <Lime />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.35, 0.105]}>
-        <torusGeometry args={[0.72, 0.03, 12, 96]} />
-        <Lime />
-      </mesh>
-      {[-1, 1].map((k) => (
-        <mesh key={k} position={[(k * gap) / 2 + k * 0.38, 0.3, 0]}>
-          <boxGeometry args={[0.76, 1.7, 1]} />
-          <Nero />
+    <group rotation={[0.42, -0.5 + fase * 0.35, 0.12]}>
+      {/* pila di monete sotto */}
+      {[0, 1].map((i) => (
+        <mesh key={i} position={[-0.1 * i, -0.36 - i * 0.34, -0.15]} rotation={[Math.PI / 2 - 0.42, 0, 0]}>
+          <cylinderGeometry args={[1.15, 1.15, 0.26, 96]} />
+          <Nero chiaro={i === 0} />
         </mesh>
       ))}
-      <mesh position={[0, -0.7, 0]}>
-        <boxGeometry args={[3.6, 0.5, 1.2]} />
-        <Nero chiaro />
-      </mesh>
-      <mesh position={[gap / 2 + 1.05, 0.3, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.1, 0.1, 1.3, 32]} />
-        <Nero chiaro />
-      </mesh>
+      {/* moneta lime con la fetta mancante */}
+      <group rotation={[-0.15, 0, 0]}>
+        <mesh>
+          <extrudeGeometry args={[moneta, ext]} />
+          <Lime />
+        </mesh>
+        <group position={[-0.06, 0, 0.3]} scale={0.78}>
+          {euro.map((s, i) => (
+            <mesh key={i}>
+              <extrudeGeometry args={[s, { depth: 0.08, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.012, bevelSegments: 2, curveSegments: 48 }]} />
+              <Nero />
+            </mesh>
+          ))}
+        </group>
+        {/* la fetta che se ne va verso destra */}
+        <mesh position={[0.2 + via * 0.6, 0.05 + via * 0.3, 0.1 + via * 0.35]} rotation={[via * 0.35, via * -0.5, via * 0.3]}>
+          <extrudeGeometry args={[fetta, ext]} />
+          <Lime />
+        </mesh>
+      </group>
     </group>
   );
 };
 
-const ChiavePortachiavi: React.FC<P> = ({ t, fase }) => (
-  <group rotation={[0.35, -0.5 + fase * 0.8, Math.sin(t * 1.5) * 0.12]}>
-    <mesh position={[-1.7, 0, 0]} rotation={[0, 0.9, 0]}>
-      <torusGeometry args={[0.55, 0.06, 16, 64]} />
-      <Nero chiaro />
-    </mesh>
-    <mesh position={[-0.75, 0, 0]}>
-      <torusGeometry args={[0.45, 0.19, 32, 64]} />
-      <Lime />
-    </mesh>
-    <mesh position={[0.62, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-      <cylinderGeometry args={[0.12, 0.12, 2, 32]} />
-      <Lime />
-    </mesh>
-    {[0.35, 0.72, 1.08, 1.45].map((x, i) => {
-      const h = 0.3 + (i % 2) * 0.15;
-      return (
-        <mesh key={x} position={[x, -0.08 - h / 2, 0]}>
-          <boxGeometry args={[0.2, h, 0.14]} />
+/**
+ * chiave-portachiavi (prenotazione diretta) → una chiave vera, piatta, con il
+ * portachiavi a forma di casa in lime: "riportare l'ospite a casa tua".
+ */
+const ChiavePortachiavi: React.FC<P> = ({ t, fase }) => {
+  // testa tonda con il foro, costruita a parte: una forma sola si rompe sull'arco
+  const testa = useMemo(() => {
+    const s = new THREE.Shape();
+    s.absarc(0, 0, 0.62, 0, Math.PI * 2, false);
+    const foro = new THREE.Path();
+    foro.absarc(-0.24, 0, 0.17, 0, Math.PI * 2, true);
+    s.holes.push(foro);
+    return s;
+  }, []);
+  const lama = useMemo(() => {
+    const p: [number, number][] = [
+      [0.4, 0.2], [2.35, 0.2], [2.55, 0.02], [2.55, -0.2], [2.38, -0.2], [2.3, -0.42], [2.14, -0.42], [2.06, -0.2],
+      [1.9, -0.2], [1.82, -0.5], [1.66, -0.5], [1.58, -0.2], [1.38, -0.2], [1.3, -0.36], [1.14, -0.36], [1.06, -0.2], [0.4, -0.2],
+    ];
+    const s = new THREE.Shape();
+    s.moveTo(p[0][0], p[0][1]);
+    for (const [x, y] of p.slice(1)) s.lineTo(x, y);
+    s.closePath();
+    return s;
+  }, []);
+  const casa = useMemo(() => {
+    const s = new THREE.Shape();
+    s.moveTo(-0.6, -0.55);
+    s.lineTo(0.6, -0.55);
+    s.lineTo(0.6, 0.2);
+    s.lineTo(0, 0.72);
+    s.lineTo(-0.6, 0.2);
+    s.closePath();
+    const foro = new THREE.Path();
+    foro.absarc(0, 0.42, 0.09, 0, Math.PI * 2, true);
+    s.holes.push(foro);
+    return s;
+  }, []);
+  const ext = { depth: 0.14, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 3, curveSegments: 48 };
+  const ondeggia = Math.sin(t * 1.4) * 0.08;
+  return (
+    <group rotation={[0.25, -0.3 + fase * 0.3, 0.42]} position={[-0.9, 0, 0]}>
+      <mesh>
+        <extrudeGeometry args={[testa, ext]} />
+        <Nero chiaro />
+      </mesh>
+      <mesh>
+        <extrudeGeometry args={[lama, ext]} />
+        <Nero chiaro />
+      </mesh>
+      <mesh position={[-0.24, 0, 0.07]} rotation={[0, Math.PI / 2.3, 0]}>
+        <torusGeometry args={[0.3, 0.035, 16, 48]} />
+        <Nero chiaro />
+      </mesh>
+      {/* portachiavi a casetta, in lime, appeso all'anello */}
+      <group position={[-0.55, -0.95, 0.04]} rotation={[0, 0.35, -0.42 + ondeggia]} scale={0.85}>
+        <mesh>
+          <extrudeGeometry args={[casa, { depth: 0.22, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 4 }]} />
           <Lime />
         </mesh>
-      );
-    })}
-  </group>
-);
+      </group>
+    </group>
+  );
+};
 
-const TelefonoNotifica: React.FC<P> = ({ t, fase }) => {
+/**
+ * telefono-notifica (risposte lente) → uno smartphone con una chat vera sullo
+ * schermo alle 23: la domanda dell'ospite e la risposta che arriva subito.
+ */
+const TelefonoNotifica: React.FC<P> = ({ fase }) => {
   const forma = useMemo(() => {
     const s = new THREE.Shape();
     const w = 1.05, h = 2.1, r = 0.26;
@@ -132,23 +235,49 @@ const TelefonoNotifica: React.FC<P> = ({ t, fase }) => {
     s.quadraticCurveTo(-w, -h, -w + r, -h);
     return s;
   }, []);
-  const n = Math.min(3, t > 0.4 ? 1 + Math.floor((t - 0.4) / 1.2) : 0);
+  const schermo = useTela2D(
+    560,
+    1180,
+    (c) => {
+      c.fillStyle = '#0a0b09';
+      c.fillRect(0, 0, 560, 1180);
+      c.fillStyle = '#ffffff';
+      c.font = "600 120px 'General Sans', sans-serif";
+      c.textAlign = 'center';
+      c.fillText('23:14', 280, 220);
+      c.font = "500 30px 'General Sans', sans-serif";
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.fillText('sabato 18 ottobre', 280, 270);
+      const bolla = (y: number, testo: string[], mia: boolean) => {
+        const w = 400, h = 40 + testo.length * 46, x = mia ? 560 - 40 - w : 40;
+        c.fillStyle = mia ? '#D4FF00' : '#2a2c28';
+        c.beginPath();
+        c.roundRect(x, y, w, h, 34);
+        c.fill();
+        c.fillStyle = mia ? '#080808' : '#ffffff';
+        c.font = "500 34px 'General Sans', sans-serif";
+        c.textAlign = 'left';
+        testo.forEach((r, i) => c.fillText(r, x + 30, y + 62 + i * 46));
+      };
+      bolla(420, ['Ciao! È libera', 'la camera sabato?'], false);
+      bolla(600, ['Sì! Ti mando foto', 'e prezzo diretto.'], true);
+      c.fillStyle = 'rgba(255,255,255,.45)';
+      c.font = "500 26px 'General Sans', sans-serif";
+      c.textAlign = 'right';
+      c.fillText('risposto in 8 secondi', 520, 760);
+    },
+    'chat-23',
+  );
   return (
-    <group rotation={[0.2, -0.45 + fase * 0.5, 0.14]}>
+    <group rotation={[0.12, -0.42 + fase * 0.35, 0.16]}>
       <mesh position={[0, 0, -0.1]}>
         <extrudeGeometry args={[forma, { depth: 0.2, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 5 }]} />
         <Nero />
       </mesh>
-      <mesh position={[0, 0, 0.16]}>
-        <planeGeometry args={[1.86, 3.9]} />
-        <meshPhysicalMaterial color="#050505" roughness={0.05} clearcoat={1} />
+      <mesh position={[0, 0, 0.161]}>
+        <planeGeometry args={[1.9, 4.0]} />
+        <meshBasicMaterial map={schermo} toneMapped={false} />
       </mesh>
-      {Array.from({ length: n }).map((_, i) => (
-        <mesh key={i} position={[0, 1.15 - i * 0.62, 0.2]}>
-          <boxGeometry args={[1.6, 0.46, 0.06]} />
-          {i === 0 ? <Lime /> : <Avorio />}
-        </mesh>
-      ))}
     </group>
   );
 };
