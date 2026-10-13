@@ -4,10 +4,11 @@ import { fontPronti } from './brand/fonts';
 import { formati, FPS } from './brand/tokens';
 import { CardServizio, CopertinaCarosello, PostDomanda, PostPrimaDopo, PostTesi, SlideCarosello } from './post/Post';
 import { Reel, durataReel, ReelProps } from './reel/Reel';
+import { PostV2, fontV2 } from './stile/PostV2';
 
 // I font devono essere pronti prima di qualsiasi fotogramma.
 const h = delayRender('font del brand');
-fontPronti.then(() => continueRender(h)).catch((e) => {
+Promise.all([fontPronti, fontV2]).then(() => continueRender(h)).catch((e) => {
   console.error('Font mancanti: controlla i segreti GENERAL_SANS_* nel workflow', e);
   continueRender(h);
 });
@@ -31,6 +32,7 @@ const esempioReel: ReelProps = {
 
 export const RemotionRoot: React.FC = () => (
   <>
+    <Still id="PostV2" component={PostV2} {...formati.verticale} defaultProps={{ registro: 'scuro' as const, titolo: 'Le OTA\nnon sono\n==il tuo cliente.==', corpo: "Il cliente è l'ospite. Il portale è l'intermediario più caro che hai.", occhiello: 'Commissioni OTA', oggetto: 'moneta-morsa', invito: 'Scrivi COMMISSIONI nei DM' }} />
     <Still id="PostTesi" component={PostTesi} {...formati.verticale} defaultProps={{ etichetta: 'Commissioni OTA', tesi: 'Booking non è il tuo cliente.\n==È il tuo intermediario più caro.==' }} />
     <Still id="PostDomanda" component={PostDomanda} {...formati.verticale} defaultProps={{ domanda: 'Ma se tolgo Booking, chi mi trova?' }} />
     <Still id="PostPrimaDopo" component={PostPrimaDopo} {...formati.verticale} defaultProps={{ prima: 'Rispondi agli ospiti la sera, dopo cena.', dopo: 'Il sito risponde alle 23, tu dormi.' }} />

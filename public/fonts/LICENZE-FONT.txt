@@ -42,3 +42,9 @@ produzione: stanno qui, nel repo, e il CSS li carica da assets/fonts/.
 Font rimossi il 28/08/2026 (brief 08): Space Grotesk, Outfit, Space Mono.
 I .woff2 sono stati cancellati insieme ai loro @font-face: se servisse
 ricostruire la versione precedente, stanno nella storia di git.
+
+────────────────────────────────────────────────────────────────────────────
+3. Anton — titoli condensati dello stile v2 (prototipo, 400)
+   anton-400-latin.woff2
+   Autore: Vernon Adams · Origine: https://fonts.google.com/specimen/Anton
+   Licenza: SIL Open Font License, Version 1.1 (https://openfontlicense.org)
