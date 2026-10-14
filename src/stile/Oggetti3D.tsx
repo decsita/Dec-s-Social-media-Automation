@@ -54,7 +54,7 @@ const Ambiente: React.FC<{ intensita?: number }> = ({ intensita = 1 }) => {
 const Nero: React.FC<{ chiaro?: boolean }> = ({ chiaro }) => (
   <meshPhysicalMaterial color={chiaro ? '#2a2c28' : '#121311'} roughness={0.28} metalness={0.15} clearcoat={1} clearcoatRoughness={0.12} />
 );
-const Lime: React.FC = () => <meshPhysicalMaterial color={LIME} roughness={0.32} metalness={0} clearcoat={0.7} clearcoatRoughness={0.2} emissive={LIME} emissiveIntensity={0.06} />;
+const Lime: React.FC = () => <meshPhysicalMaterial color={LIME} roughness={0.34} metalness={0} clearcoat={0.5} clearcoatRoughness={0.2} emissive={LIME} emissiveIntensity={0.22} />;
 
 type P = { t: number; fase: number };
 const eo = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
@@ -282,25 +282,208 @@ const TelefonoNotifica: React.FC<P> = ({ fase }) => {
   );
 };
 
+/**
+ * calendario-caselle (stagionalità, camere vuote) → un calendario da tavolo vero:
+ * anelli, testata lime, i giorni numerati e quasi tutte le caselle libere.
+ * Solo tre giorni sono prenotati (caselle nere): "il mese è vuoto".
+ */
 const CalendarioCaselle: React.FC<P> = ({ t, fase }) => {
-  const caselle = useMemo(() => {
-    const out: { x: number; y: number; piena: boolean; i: number }[] = [];
-    let i = 0;
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) out.push({ x: (c - 2) * 0.64, y: (1.5 - r) * 0.64, piena: (r * 5 + c) % 3 !== 1 && r < 2, i: i++ });
-    return out;
-  }, []);
+  const pagina = useTela2D(
+    1000,
+    1000,
+    (c) => {
+      c.fillStyle = '#F7F6F1';
+      c.fillRect(0, 0, 1000, 1000);
+      const giorni = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+      const x0 = 60, y0 = 150, cw = 126, ch = 160;
+      c.textAlign = 'center';
+      c.font = "600 40px 'General Sans', sans-serif";
+      c.fillStyle = 'rgba(8,8,8,.45)';
+      giorni.forEach((g, i) => c.fillText(g, x0 + cw * i + cw / 2, 90));
+      const prenotati = new Set([4, 11, 25]);
+      for (let d = 1; d <= 31; d++) {
+        const k = d + 1; // il mese parte di mercoledì
+        const col = k % 7, riga = Math.floor(k / 7);
+        const x = x0 + col * cw, y = y0 + riga * ch;
+        c.strokeStyle = 'rgba(8,8,8,.14)';
+        c.lineWidth = 3;
+        c.strokeRect(x + 4, y + 4, cw - 8, ch - 8);
+        if (prenotati.has(d)) {
+          c.fillStyle = '#080808';
+          c.fillRect(x + 4, y + 4, cw - 8, ch - 8);
+        }
+        c.fillStyle = prenotati.has(d) ? '#ffffff' : '#080808';
+        c.font = "600 52px 'General Sans', sans-serif";
+        c.textAlign = 'left';
+        c.fillText(String(d), x + 20, y + 66);
+      }
+    },
+    'calendario-v2',
+  );
+  const sfoglia = eo((t - 0.3) / 1.2); // il foglio si posa
   return (
-    <group rotation={[-0.5, -0.45 + fase * 0.4, -0.06]}>
-      <mesh position={[0, 0, -0.2]}>
-        <boxGeometry args={[3.5, 2.85, 0.16]} />
+    <group rotation={[-0.22, -0.5 + fase * 0.35, 0.06]}>
+      {/* supporto nero dietro */}
+      <mesh position={[0, -0.12, -0.12]}>
+        <boxGeometry args={[2.75, 3.05, 0.12]} />
         <Nero />
       </mesh>
-      {caselle.map((c) => {
-        const via = c.piena ? Math.min(Math.pow(Math.max(0, t - 1 - c.i * 0.1), 2) * 1.6, 6) : 0;
+      {/* testata lime */}
+      <mesh position={[0, 1.28, 0.02]}>
+        <boxGeometry args={[2.75, 0.5, 0.2]} />
+        <Lime />
+      </mesh>
+      {/* foglio del mese */}
+      <mesh position={[0, -0.27, 0.0 + 0.01]} rotation={[(1 - sfoglia) * -0.5, 0, 0]}>
+        <planeGeometry args={[2.6, 2.6]} />
+        <meshPhysicalMaterial map={pagina} roughness={0.55} clearcoat={0.3} />
+      </mesh>
+      {/* anelli */}
+      {[-1.0, -0.6, -0.2, 0.2, 0.6, 1.0].map((x) => (
+        <mesh key={x} position={[x, 1.55, 0.02]} rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[0.13, 0.03, 12, 32]} />
+          <Nero chiaro />
+        </mesh>
+      ))}
+    </group>
+  );
+};
+
+/** Stella a cinque punte: R raggio esterno, r interno. */
+function formaStella(R = 1, r = 0.42) {
+  const s = new THREE.Shape();
+  for (let k = 0; k < 10; k++) {
+    const a = Math.PI / 2 + (k * Math.PI) / 5;
+    const rad = k % 2 === 0 ? R : r;
+    if (k === 0) s.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+    else s.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+  }
+  s.closePath();
+  return s;
+}
+
+/** Mezza stella (sinistra o destra), tagliata lungo una linea a zig-zag: la crepa. */
+function mezzaStella(lato: -1 | 1, R = 1, r = 0.42) {
+  // crepa: dall'alto al basso con un piccolo zig-zag
+  const crepa: [number, number][] = [
+    [0, R],
+    [0.06, 0.45],
+    [-0.07, 0.12],
+    [0.05, -0.18],
+    [-0.02, -r * 0.82],
+  ];
+  const punti: [number, number][] = [];
+  for (let k = 0; k <= 10; k++) {
+    const a = Math.PI / 2 + (k * Math.PI) / 5;
+    const rad = k % 2 === 0 ? R : r;
+    punti.push([Math.cos(a) * rad, Math.sin(a) * rad]);
+  }
+  // punte della metà richiesta, ordinate dall'alto in giù
+  const meta = punti.filter(([x]) => (lato < 0 ? x < -0.001 : x > 0.001));
+  const s = new THREE.Shape();
+  s.moveTo(crepa[0][0], crepa[0][1]);
+  const ord = lato < 0 ? meta : meta.slice().reverse();
+  // lato sinistro: k cresce in senso antiorario → dall'alto scende a sinistra
+  for (const [x, y] of ord) s.lineTo(x, y);
+  for (const [x, y] of crepa.slice().reverse()) s.lineTo(x, y);
+  s.closePath();
+  return s;
+}
+
+/**
+ * stella-incrinata (recensioni, reputazione) → la valutazione a cinque stelle:
+ * quattro piene in lime, la quinta nera e spaccata in due. "Una stella in meno".
+ */
+const StellaIncrinata: React.FC<P> = ({ t, fase }) => {
+  const stella = useMemo(() => formaStella(), []);
+  const meta = useMemo(() => [mezzaStella(-1), mezzaStella(1)], []);
+  const ext = { depth: 0.28, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 4 };
+  const rotta = eo((t - 1) / 1.2);
+  return (
+    <group rotation={[0.18, -0.35 + fase * 0.3, 0.14]}>
+      {[0, 1, 2, 3].map((i) => {
+        const entra = eo((t - i * 0.15) / 0.6);
         return (
-          <mesh key={c.i} position={[c.x, c.y - via, 0.06 + (c.piena ? 0.1 : 0)]} rotation={[via * 0.6, via * 0.3, 0]}>
-            <boxGeometry args={[0.54, 0.54, c.piena ? 0.32 : 0.06]} />
-            {c.piena ? <Lime /> : <Nero chiaro />}
+          <mesh key={i} position={[(i - 2) * 1.12, 0, 0]} scale={0.5 * entra}>
+            <extrudeGeometry args={[stella, ext]} />
+            <Lime />
+          </mesh>
+        );
+      })}
+      {/* la quinta, nera, spaccata */}
+      <group position={[2 * 1.12, -0.05 - rotta * 0.12, 0]} scale={0.5}>
+        {meta.map((sh, i) => (
+          <mesh key={i} position={[(i ? 1 : -1) * rotta * 0.07, (i ? -1 : 0) * rotta * 0.08, 0]} rotation={[0, 0, (i ? -0.12 : 0.03) * rotta]}>
+            <extrudeGeometry args={[sh, ext]} />
+            <Nero chiaro />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+};
+
+/** Campana del megafono: profilo per il tornio (asse y, bocca in alto). */
+function profiloCampana(): THREE.Vector2[] {
+  const p: THREE.Vector2[] = [];
+  for (let i = 0; i <= 24; i++) {
+    const u = i / 24;
+    p.push(new THREE.Vector2(0.3 + Math.pow(u, 1.6) * 0.85, u * 1.6));
+  }
+  return p;
+}
+
+/**
+ * megafono (visibilità, pubblicità) → un megafono completo: campana lime,
+ * corpo e impugnatura neri, e le onde del suono che escono dalla bocca.
+ */
+const Megafono: React.FC<P> = ({ t, fase }) => {
+  const campana = useMemo(() => new THREE.LatheGeometry(profiloCampana(), 96), []);
+  const onda = (k: number) => {
+    const ciclo = ((t * 0.9 + k * 0.33) % 1 + 1) % 1;
+    return { r: 0.75 + k * 0.42 + ciclo * 0.12, o: 0.95 - ciclo * 0.35 };
+  };
+  return (
+    // la bocca guarda verso l'alto a sinistra, verso il titolo
+    <group rotation={[0, -0.45 + fase * 0.3, -0.38]}>
+      <group rotation={[0, 0, Math.PI / 2]}>
+        {/* campana: fuori lime, dentro nera */}
+        <mesh geometry={campana} position={[0, 0.2, 0]}>
+          <meshPhysicalMaterial color={LIME} roughness={0.32} clearcoat={0.7} clearcoatRoughness={0.2} emissive={LIME} emissiveIntensity={0.06} side={THREE.FrontSide} />
+        </mesh>
+        <mesh geometry={campana} position={[0, 0.2, 0]} scale={[0.97, 1, 0.97]}>
+          <meshPhysicalMaterial color="#0d0e0c" roughness={0.5} side={THREE.BackSide} />
+        </mesh>
+        <mesh position={[0, 1.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[1.15, 0.07, 16, 96]} />
+          <Nero chiaro />
+        </mesh>
+        {/* corpo */}
+        <mesh position={[0, -0.35, 0]}>
+          <cylinderGeometry args={[0.34, 0.4, 1.1, 48]} />
+          <Nero />
+        </mesh>
+        <mesh position={[0, -0.95, 0]}>
+          <cylinderGeometry args={[0.44, 0.44, 0.16, 48]} />
+          <Nero chiaro />
+        </mesh>
+        {/* impugnatura e grilletto */}
+        <mesh position={[-0.62, -0.5, 0]} rotation={[0, 0, 0.25]}>
+          <capsuleGeometry args={[0.15, 0.62, 8, 24]} />
+          <Nero />
+        </mesh>
+        <mesh position={[-0.42, -0.08, 0]} rotation={[0, 0, -0.5]}>
+          <boxGeometry args={[0.1, 0.3, 0.12]} />
+          <Nero chiaro />
+        </mesh>
+      </group>
+      {/* onde del suono davanti alla bocca */}
+      {[0, 1, 2].map((k) => {
+        const o = onda(k);
+        return (
+          <mesh key={k} position={[-2.0, 0, 0.1]} rotation={[0, 0, Math.PI - 0.7]}>
+            <torusGeometry args={[o.r, 0.06, 12, 48, 1.4]} />
+            <meshBasicMaterial color={LIME} transparent opacity={o.o} toneMapped={false} />
           </mesh>
         );
       })}
@@ -308,82 +491,69 @@ const CalendarioCaselle: React.FC<P> = ({ t, fase }) => {
   );
 };
 
-const StellaIncrinata: React.FC<P> = ({ t, fase }) => {
-  const meta = useMemo(() => {
-    const R = 1.3, r = 0.54;
-    const lato = (s: number) => {
-      const sh = new THREE.Shape();
-      sh.moveTo(0, -0.9 * r);
-      for (let k = 0; k <= 10; k++) {
-        const a = Math.PI / 2 + (k * Math.PI) / 5;
-        const rad = k % 2 === 0 ? R : r;
-        const x = Math.cos(a) * rad, y = Math.sin(a) * rad;
-        if (s * x >= -0.0001) sh.lineTo(Math.max(0, s * x) * s, y);
-      }
-      sh.lineTo(0, R);
-      return sh;
-    };
-    return [lato(-1), lato(1)];
-  }, []);
-  const d = 0.04 + 0.34 * eo((t - 0.8) / 1.2);
+/** Pedone: profilo per il tornio. */
+function profiloPedone(): THREE.Vector2[] {
+  const p: [number, number][] = [
+    [0, 0], [0.5, 0], [0.5, 0.08], [0.44, 0.16], [0.44, 0.22], [0.3, 0.32], [0.2, 0.5], [0.16, 0.86],
+    [0.28, 0.92], [0.28, 0.98], [0.14, 1.02],
+  ];
+  const out = p.map(([x, y]) => new THREE.Vector2(x, y));
+  // testa sferica
+  for (let i = 0; i <= 16; i++) {
+    const a = -Math.PI / 2 + 0.55 + (i / 16) * (Math.PI - 0.55);
+    out.push(new THREE.Vector2(Math.max(0, Math.cos(a) * 0.27), 1.27 + Math.sin(a) * 0.27));
+  }
+  return out;
+}
+
+/**
+ * pezzo-scacchi (strategia, giocare d'anticipo) → la prima mossa: una scacchiera
+ * vera e un pedone che avanza di una casa, sulla casella lime.
+ */
+const PezzoScacchi: React.FC<P> = ({ t, fase }) => {
+  const pedone = useMemo(() => new THREE.LatheGeometry(profiloPedone(), 96), []);
+  const N = 4, L = 0.62;
+  const caselle = useMemo(() => {
+    const out: { x: number; z: number; scura: boolean; meta: boolean; k: string }[] = [];
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) out.push({ x: (c - (N - 1) / 2) * L, z: (r - (N - 1) / 2) * L, scura: (r + c) % 2 === 1, meta: r === 2 && c === 1, k: `${r}-${c}` });
+    return out;
+  }, [L]);
+  // il pedone parte dalla casa dietro (r=1) e avanza verso chi guarda, sulla lime (r=2)
+  const v = Math.min(1, Math.max(0, (t - 2.5) / 1.0));
+  const u = v * v * (3 - 2 * v); // nel fotogramma del post (t=3) il pedone è a metà salto
+  const zDa = (1 - (N - 1) / 2) * L, zA = (2 - (N - 1) / 2) * L;
+  const x = (1 - (N - 1) / 2) * L;
+  const salto = Math.sin(Math.PI * u) * 0.4;
   return (
-    <group rotation={[0.2, -0.4 + fase * 0.7, 0]}>
-      {meta.map((sh, i) => (
-        <mesh key={i} position={[(i ? 1 : -1) * d, 0, 0]} rotation={[0, 0, (i ? -0.08 : 0.08) * (d / 0.38)]}>
-          <extrudeGeometry args={[sh, { depth: 0.36, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 4 }]} />
-          {i ? <Nero /> : <Lime />}
+    <group rotation={[0.55, -0.62 + fase * 0.35, 0]}>
+      <mesh position={[0, -0.09, 0]}>
+        <boxGeometry args={[N * L + 0.2, 0.16, N * L + 0.2]} />
+        <Nero />
+      </mesh>
+      {caselle.map((c) => (
+        <mesh key={c.k} position={[c.x, 0.0, c.z]}>
+          <boxGeometry args={[L - 0.015, 0.04, L - 0.015]} />
+          {c.meta ? <Lime /> : c.scura ? <Nero chiaro /> : <meshPhysicalMaterial color="#e8e6df" roughness={0.3} clearcoat={1} clearcoatRoughness={0.15} />}
         </mesh>
       ))}
-    </group>
-  );
-};
-
-const Megafono: React.FC<P> = ({ t, fase }) => {
-  const colpo = 1 + Math.max(0, Math.sin(t * 5)) * 0.03;
-  return (
-    <group rotation={[0.15, -0.9 + fase * 0.4, 0.28]} scale={colpo}>
-      <mesh rotation={[0, 0, -Math.PI / 2]} position={[0.45, 0, 0]}>
-        <cylinderGeometry args={[1.05, 0.32, 1.9, 64, 1, true]} />
-        <meshPhysicalMaterial color={LIME} roughness={0.3} clearcoat={0.7} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh rotation={[0, 0, -Math.PI / 2]} position={[1.42, 0, 0]}>
-        <torusGeometry args={[1.05, 0.07, 16, 64]} />
-        <Nero chiaro />
-      </mesh>
-      <mesh rotation={[0, 0, -Math.PI / 2]} position={[-0.85, 0, 0]}>
-        <cylinderGeometry args={[0.34, 0.34, 0.75, 48]} />
+      <mesh geometry={pedone} position={[x, 0.02 + salto, zDa + (zA - zDa) * u]} rotation={[(1 - u) * -0.15 * Math.sin(Math.PI * u), 0, 0]} scale={0.95}>
         <Nero />
       </mesh>
-      <mesh position={[-0.75, -0.65, 0]} rotation={[0, 0, 0.25]}>
-        <boxGeometry args={[0.28, 0.9, 0.3]} />
-        <Nero />
-      </mesh>
-    </group>
-  );
-};
-
-const PezzoScacchi: React.FC<P> = ({ fase }) => {
-  const geo = useMemo(() => {
-    const p: [number, number][] = [
-      [0, 0], [0.95, 0], [0.95, 0.12], [0.82, 0.22], [0.82, 0.32], [0.58, 0.45], [0.42, 0.62], [0.36, 1.6],
-      [0.5, 1.72], [0.5, 1.82], [0.34, 1.9], [0.44, 2.3], [0.52, 2.55], [0.2, 2.7], [0, 2.7],
-    ];
-    return new THREE.LatheGeometry(p.map(([x, y]) => new THREE.Vector2(x, y)), 96);
-  }, []);
-  return (
-    <group rotation={[0.08, fase * 1.2, 0]} position={[0, -1.4, 0]}>
-      <mesh geometry={geo}>
-        <Nero />
-      </mesh>
-      {/* croce del re, in lime */}
-      <mesh position={[0, 3.05, 0]}>
-        <boxGeometry args={[0.16, 0.7, 0.16]} />
-        <Lime />
-      </mesh>
-      <mesh position={[0, 3.12, 0]}>
-        <boxGeometry args={[0.5, 0.16, 0.16]} />
-        <Lime />
-      </mesh>
+      {/* un re sullo sfondo: dice "scacchi" anche a chi guarda di sfuggita */}
+      <group position={[(2 - (N - 1) / 2) * L, 0.02, (0 - (N - 1) / 2) * L]} scale={0.62}>
+        <mesh geometry={pedone} scale={[1.05, 1.5, 1.05]}>
+          <Nero chiaro />
+        </mesh>
+        <mesh position={[0, 2.25, 0]}>
+          <boxGeometry args={[0.1, 0.4, 0.1]} />
+          <Nero chiaro />
+        </mesh>
+        <mesh position={[0, 2.3, 0]}>
+          <boxGeometry args={[0.3, 0.1, 0.1]} />
+          <Nero chiaro />
+        </mesh>
+      </group>
     </group>
   );
 };

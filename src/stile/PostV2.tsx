@@ -15,8 +15,15 @@ export const fontV2 = loadFont({ family: 'Anton', url: staticFile('fonts/anton-4
 
 const LIME = '#D4FF00';
 /** Ogni oggetto ha la sua misura: deve stare in basso a destra senza coprire il titolo. */
-const POS: Record<string, [number, number, number]> = { 'moneta-morsa': [0.85, -1.45, 0], 'chiave-portachiavi': [0.75, -0.95, 0] };
-const SCALA: Record<string, number> = { 'moneta-morsa': 0.72, 'chiave-portachiavi': 0.7, 'telefono-notifica': 0.62, 'calendario-caselle': 0.8, 'stella-incrinata': 0.9, megafono: 0.85, 'pezzo-scacchi': 0.68 };
+const POS: Record<string, [number, number, number]> = {
+  'moneta-morsa': [0.85, -1.45, 0],
+  'chiave-portachiavi': [0.75, -0.95, 0],
+  'calendario-caselle': [1.05, -1.15, 0],
+  'stella-incrinata': [-0.05, -1.4, 0],
+  megafono: [1.2, -1.75, 0],
+  'pezzo-scacchi': [0.8, -1.4, 0],
+};
+const SCALA: Record<string, number> = { 'moneta-morsa': 0.72, 'chiave-portachiavi': 0.7, 'telefono-notifica': 0.62, 'calendario-caselle': 0.66, 'stella-incrinata': 0.54, megafono: 0.68, 'pezzo-scacchi': 0.66 };
 const INK = '#080808';
 const AVORIO = '#F2F0EB';
 
