@@ -78,7 +78,7 @@ const chromiumOptions = { gl: 'swangle' };
 async function main() {
   controlliComuni();
   console.log(`▶ ${postId} · ${mediaTipo} · ${formatSheet}`);
-  const serveUrl = await bundle({ entryPoint: path.join(ROOT, 'src/index.ts'), publicDir: path.join(ROOT, 'public') });
+  const serveUrl = await bundle({ entryPoint: path.join(ROOT, 'src/index.ts'), publicDir: process.env.REMOTION_PUBLIC_DIR || path.join(ROOT, 'public') });
   const file = []; // {locale, nome, tipo}
 
   const still = async (id, props, nome) => {
@@ -148,7 +148,7 @@ async function reel(serveUrl, file) {
   if (!t.invito) avvisi.push('Manca la CTA finale (invito).');
 
   const props = { testi: t, oggetto: payload.oggetto_3d || '', problema: payload.problema || '' };
-  const comp = await selectComposition({ serveUrl, id: 'Reel', inputProps: props, browserExecutable, chromiumOptions });
+  const comp = await selectComposition({ serveUrl, id: process.env.REEL_COMPOSIZIONE || 'Reel', inputProps: props, browserExecutable, chromiumOptions });
   const muto = path.join(OUT, `${postId}-muto.mp4`);
   let ultimo = -1;
   await renderMedia({

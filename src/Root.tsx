@@ -5,6 +5,7 @@ import { formati, FPS } from './brand/tokens';
 import { CardServizio, CopertinaCarosello, PostDomanda, PostPrimaDopo, PostTesi, SlideCarosello } from './post/Post';
 import { Reel, durataReel, ReelProps } from './reel/Reel';
 import { PostV2, fontV2 } from './stile/PostV2';
+import { ReelGlass } from './stile/ReelGlass';
 
 // I font devono essere pronti prima di qualsiasi fotogramma.
 const h = delayRender('font del brand');
@@ -42,6 +43,15 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="Reel"
       component={Reel}
+      fps={FPS}
+      {...formati.storia}
+      durationInFrames={durataReel(esempioReel.testi)}
+      defaultProps={esempioReel}
+      calculateMetadata={({ props }) => ({ durationInFrames: durataReel(props.testi) })}
+    />
+    <Composition
+      id="ReelGlass"
+      component={ReelGlass}
       fps={FPS}
       {...formati.storia}
       durationInFrames={durataReel(esempioReel.testi)}
