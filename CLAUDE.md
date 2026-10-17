@@ -5,5 +5,5 @@
 - I testi arrivano con il markup del Copywriter: `==riga==` = riga lime, `*parole*` = corsivo serif.
 - Un solo elemento lime per inquadratura. Nei reel il controluce lime dell'oggetto 3D conta come elemento lime.
 - Le animazioni dipendono solo da `useCurrentFrame()`. Mai `useFrame()` di react-three-fiber, mai CSS animation.
-- General Sans non si committa mai (licenza ITF FFL, repo pubblico): arriva dai segreti.
+- General Sans non si committa mai (licenza ITF FFL, repo pubblico): nel workflow arriva dai segreti `GENERAL_SANS_*` se ci sono, altrimenti `scripts/font-general-sans.mjs` lo scarica da Fontshare.
 - Prima di consegnare una modifica alle grafiche: `node scripts/render.mjs --payload fixtures/<file>.json --no-upload` e guardare i file in `out/`.

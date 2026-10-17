@@ -61,7 +61,7 @@ Le immagini escono in JPG anche se `03-FORMATI` preferisce il PNG per il testo: 
 
 | Segreto | Cosa contiene |
 | --- | --- |
-| `GENERAL_SANS_400`, `GENERAL_SANS_500`, `GENERAL_SANS_600` | il file `.woff2` in base64 (`base64 -w0 general-sans-400-latin.woff2`). I file stanno in `PROJECT/decs-contenuti-ds/assets/fonts/`. **Non vanno nel repo**: la licenza ITF FFL non permette di ridistribuirli, e il repo è pubblico. |
+| `GENERAL_SANS_400`, `GENERAL_SANS_500`, `GENERAL_SANS_600` | **facoltativi**: senza, il workflow scarica i font da Fontshare con `scripts/font-general-sans.mjs`. Se ci sono: il file `.woff2` in base64 (`base64 -w0 general-sans-400-latin.woff2`). I file stanno in `PROJECT/decs-contenuti-ds/assets/fonts/`. **Non vanno nel repo**: la licenza ITF FFL non permette di ridistribuirli, e il repo è pubblico. |
 | `SUPABASE_URL` | `https://<progetto>.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | chiave service role del progetto (solo qui, mai in Make o nel foglio) |
 
@@ -83,7 +83,7 @@ I file finiscono in `social-media/<client_id>/<post_id>/`.
 ## Provare senza Make
 
 - **Actions → Render grafiche → Run workflow**: senza payload rende il reel di prova; con "Mandare davvero il risultato a S3b" spento non tocca Make. I file si scaricano dagli *artifact* della run.
-- In locale: `npm ci`, copiare i tre `general-sans-*.woff2` in `public/fonts/`, poi
+- In locale: `npm ci`, `node scripts/font-general-sans.mjs` (o copiare i tre `general-sans-*.woff2` in `public/fonts/`), poi
   `node scripts/render.mjs --payload fixtures/reel-commissioni.json --no-upload`.
 - `npm run studio` apre Remotion Studio per lavorare sulle grafiche.
 

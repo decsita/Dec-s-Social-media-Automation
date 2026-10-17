@@ -46,17 +46,18 @@ jobs:
       - name: Dipendenze
         run: npm ci --no-audit --no-fund
 
-      - name: Font General Sans (dai segreti, non stanno nel repo)
+      - name: Font General Sans (segreti o Fontshare, mai nel repo)
         env:
           GS400: ${{ secrets.GENERAL_SANS_400 }}
           GS500: ${{ secrets.GENERAL_SANS_500 }}
           GS600: ${{ secrets.GENERAL_SANS_600 }}
         run: |
+          # Se i segreti ci sono, vincono loro; altrimenti si scaricano da Fontshare (fonte ufficiale).
           for w in 400 500 600; do
             v="GS$w"
-            if [ -z "${!v}" ]; then echo "::error::Manca il segreto GENERAL_SANS_$w (vedi README)"; exit 1; fi
-            printf '%s' "${!v}" | base64 -d > "public/fonts/general-sans-$w-latin.woff2"
+            if [ -n "${!v}" ]; then printf '%s' "${!v}" | base64 -d > "public/fonts/general-sans-$w-latin.woff2"; fi
           done
+          node scripts/font-general-sans.mjs
           ls -la public/fonts
 
       - name: Browser per il render
